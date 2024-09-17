@@ -6,7 +6,6 @@ const computer = 'O';
 let board = Array(9).fill(null);
 let gameActive = true;
 
-// Winning combinations
 const winConditions = [
     [0, 1, 2],
     [3, 4, 5],
@@ -18,7 +17,7 @@ const winConditions = [
     [2, 4, 6]
 ];
 
-// Check for a winner
+
 function checkWin(board, player) {
     return winConditions.some(condition => {
         return condition.every(index => board[index] === player);
@@ -47,14 +46,61 @@ function handlePlayerMove(index) {
     }
 }
 
-// Random AI move (Simple AI)
+// Minimax algorithm to choose the best move for AI
+function minimax(newBoard, isMaximizing) {
+    // Check for terminal states
+    if (checkWin(newBoard, computer)) {
+        return { score: 1 };  // Computer wins
+    } else if (checkWin(newBoard, player)) {
+        return { score: -1 }; 
+    } else if (checkDraw(newBoard)) {
+        return { score: 0 };  // It's a draw
+    }
+
+    const availableMoves = newBoard.map((cell, index) => cell === null ? index : null).filter(index => index !== null);
+
+    if (isMaximizing) {
+        let bestScore = -Infinity;
+        let bestMove = null;
+
+        availableMoves.forEach(index => {
+            newBoard[index] = computer;
+            let result = minimax(newBoard, false);
+            newBoard[index] = null;
+
+            if (result.score > bestScore) {
+                bestScore = result.score;
+                bestMove = index;
+            }
+        });
+
+        return { move: bestMove, score: bestScore };
+    } else {
+        let bestScore = Infinity;
+        let bestMove = null;
+
+        availableMoves.forEach(index => {
+            newBoard[index] = player;
+            let result = minimax(newBoard, true);
+            newBoard[index] = null;
+
+            if (result.score < bestScore) {
+                bestScore = result.score;
+                bestMove = index;
+            }
+        });
+
+        return { move: bestMove, score: bestScore };
+    }
+}
+
+// AI makes the best move using Minimax
 function computerMove() {
     if (!gameActive) return;
-    
-    let availableMoves = board.map((cell, index) => cell === null ? index : null).filter(index => index !== null);
-    if (availableMoves.length > 0) {
-        let randomIndex = availableMoves[Math.floor(Math.random() * availableMoves.length)];
-        board[randomIndex] = computer;
+
+    let bestMove = minimax(board, true).move;
+    if (bestMove !== null) {
+        board[bestMove] = computer;
         updateBoard();
         if (checkWin(board, computer)) {
             setTimeout(() => alert("Computer wins!"), 100);
@@ -79,11 +125,9 @@ restartBtn.addEventListener('click', () => {
     gameActive = true;
     updateBoard();
 });
-
 quitBtn.addEventListener('click', () => {
     window.location.href = 'options.html'; 
 });
-
 // Add event listeners to cells for player moves
 cells.forEach((cell, index) => {
     cell.addEventListener('click', () => handlePlayerMove(index));
